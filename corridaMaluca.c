@@ -1,33 +1,11 @@
 /*
-<HEADER do PGM>
- P<n>
- # Comentario qualquer: normalmente o software que criou a imagem !
- XDIM YDIM
- MaxVal
-
-
-//XDIM e YDIM - separados por linha ou espaço em branco
-    //se não for na frente do XDIM, estará na próxima linha
-//MaxVal - valor do maior pixel encontrado - entre 0 e 255
-
-
- se nValue == 2: valores dos pixels em cada linha, abaixo do MaxVal
-
- se nValue == 5: stream binária de tamanho XDIM * YDIM, que contém todos os bytes da imagem
-
-
- y = c * log(1+y) com c = 255 / log(1+max), onde:
- y é todo pixel da nova imagem; x é todo pixel da imagem original e max é o pixel de maior
- valor da imagem original.
-
-
- saída em formato ASCII, logo, é necessário outro ptr para criação de um arquivo em txt
-   na segunda linha: # CREATOR: Image Generator SCC-222 – Lab ICC I
+Corrida Maluca - é necessária a visualização d
 */
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 
 typedef struct {
     int XDIM;
@@ -36,13 +14,19 @@ typedef struct {
     int MinVal;
     int nValue;
     char tipo[10];
-    char *pixels;
+    char* pixels;
+    // tipo e MinVal são desnecessários
 }Imagem;
 
 //functions 
-void infoHeader(Imagem* image, char* argv[]);
-void calculaMin(Imagem image, char* argv[]);
-void loadPixelsTEXTO(Imagem image, char *argv[]);
+void infoHeader(Imagem* imagem, char* argv[]);
+void calculaMin(Imagem imagem, char* argv[]);
+void loadPixelsTEXTO(Imagem imagem, char* argv[]);
+void loadPixelsBINARIO(Imagem imagem, char* argv[]);
+void createNew_TEXTO(Imagem imagem, Imagem novaImagem, char* argv[]);
+void createNew_BINARIO(Imagem imagem, Imagem novaImagem, char* argv[]);
+FILE* chamarNovoFILE(char* argv[]);
+
 
 void infoHeader(Imagem* image, char* argv[])
 {
@@ -76,9 +60,9 @@ void infoHeader(Imagem* image, char* argv[])
     fclose(ptrFile);
 }
 
-void calculaMin(Imagem image, char* argv[])
+void calculaMin(Imagem imagem, char* argv[])
 {
-    FILE *ptr;
+    FILE* ptr;
     ptr = fopen(argv[1], "rb");
 
     fseek(ptr, 5, SEEK_CUR);
@@ -87,66 +71,209 @@ void calculaMin(Imagem image, char* argv[])
     //inicializando com o maior possivel
 
     int pixel;
-    for(int i=0; i< image.XDIM * image.YDIM; i++){
+    for (int i = 0; i < imagem.XDIM * imagem.YDIM; i++) {
         fread(pixel, sizeof(pixel), 1, ptr);
-        if(pixel < menorVal){
+        if (pixel < menorVal) {
             menorVal = pixel;
         }
     }
 
-    image.MinVal = menorVal;
+    imagem.MinVal = menorVal;
 }
 
-void loadPixelsTEXTO(Imagem image, char *argv[])
+void loadPixelsTEXTO(Imagem imagem, char* argv[])
 {
-    FILE *ptr;
+    FILE* ptr;
     ptr = fopen(argv[1], "rb");
 
     fseek(ptr, 5, SEEK_CUR);
 
-    image.pixels = (char*) malloc(image.XDIM * image.YDIM * sizeof(char));
+    imagem.pixels = (char*)malloc(imagem.XDIM * imagem.YDIM * sizeof(char));
+    if (imagem.pixels == NULL) {
+        printf("erro");
+        exit(0);
+    }
 
     // Lê os pixels um por um (cada um em uma linha)
     int pixValue;
 
-    for (int i = 0; i < image.XDIM * image.YDIM; i++) {
+    for (int i = 0; i < imagem.XDIM * imagem.YDIM; i++) {
         fscanf(ptr, "%d", &pixValue);
-        image.pixels[i] = (char) pixValue; // Converte para char (0-255)
+        imagem.pixels[i] = (char)pixValue; // Converte para char (0-255)
     }
 
 }
 
-void loadPixelsBINARIO(Imagem image, char *argv[])
+void loadPixelsBINARIO(Imagem imagem, char* argv[])
 {
-    FILE *ptr;
+    FILE* ptr;
     ptr = fopen(argv[1], "rb");
-    if(ptr == NULL){
+    if (ptr == NULL) {
         printf("erro");
         exit(0);
     }
 
     fseek(ptr, 5, SEEK_END);
 
-    image.pixels = (char*) malloc(image.XDIM * image.YDIM * sizeof(char));
+    imagem.pixels = (char*)malloc(imagem.XDIM * imagem.YDIM * sizeof(char));
+    if (imagem.pixels == NULL) {
+        printf("erro");
+        exit(0);
+    }
 
-    fread(image.pixels, sizeof(image.pixels), (image.XDIM * image.YDIM), ptr);
+    fread(imagem.pixels, sizeof(imagem.pixels), (imagem.XDIM * imagem.YDIM), ptr);
+
 }
 
-int main(int argc, char* argv[]) 
+void createNew_TEXTO(Imagem imagem, Imagem novaImagem, char* argv[])
 {
-    Imagem image;
-    infoHeader(&image, argv);
-    calculaMin(image, argv);
-    if(image.nValue == 2){
-        strcpy(image.tipo, "texto");
-        loadPixelsTEXTO(image, argv);  
-    }else{
-        strcpy(image.tipo, "binario");
-        loadPixelsBINARIO(image, argv);
+    FILE* ptrFILE = chamarNovoFILE(argv);
+
+    fprintf(ptrFILE, "P<2>");
+    fprintf(ptrFILE, "# CREATOR: Image Generator SCC-222 - Lab ICC I");
+    fprintf(ptrFILE, "%d %d", imagem.XDIM, imagem.YDIM);
+    fprintf(ptrFILE, "%d", imagem.MaxVal);
+
+    /*
+     y = c * log(1+y) com c = 255 / log(1+max), onde:
+     c é constante;
+     y é todo pixel da nova imagem; x é todo pixel da imagem original e max é o pixel de maior
+     valor da imagem original.
+    */
+
+    double c = 255 / log10(1 + imagem.MaxVal);
+
+    // calculando constante c e armazenando na heap os pixels da novaImagem
+
+    novaImagem.pixels = malloc(imagem.XDIM * imagem.YDIM * sizeof(char));
+    if (novaImagem.pixels == NULL) {
+        printf("erro");
+        exit(0);
     }
-      
-    saveImage(image, argv);
-    
-    free(image.pixels);
+
+    // cada pixel da novaImagem terá o seguinte cálculo
+    for (int i = 0; i < imagem.XDIM * imagem.YDIM; i++) {
+        novaImagem.pixels[i] = c * log10(1 + novaImagem.pixels[i]);
+        fprintf(ptrFILE, "%s", novaImagem.pixels[i]);
+    }
+
+}
+
+void createNew_BINARIO(Imagem imagem, Imagem novaImagem, char* argv[])
+{
+    FILE* ptrFILE = chamarNovoFILE(argv);
+
+    fprintf(ptrFILE, "P<2>");
+    fprintf(ptrFILE, "# CREATOR: Image Generator SCC-222 - Lab ICC I");
+    fprintf(ptrFILE, "%d %d", imagem.XDIM, imagem.YDIM);
+    fprintf(ptrFILE, "%d", imagem.MaxVal);
+
+    novaImagem.pixels = malloc(imagem.XDIM * imagem.YDIM * sizeof(char));
+    if (novaImagem.pixels == NULL) {
+        printf("erro");
+        exit(0);
+    }
+
+    double c = 255 / log10(1 + imagem.MaxVal);
+
+    /*
+
+    \
+    0
+    0
+    \0
+
+    proxima:
+    \
+    0
+    5
+    \0
+
+    */
+
+
+    for (int i = 0; i < imagem.XDIM * imagem.YDIM; i++) {
+        // apenas os dois digitos
+        char token[3] = { 0 };
+
+        //exemplo mais acima;
+        char hex[4] = { 0 };
+
+        fread(hex, sizeof(char), 4, ptrFILE);
+
+        // hex em [1] e em [2] são 
+        token[0] = hex[1];
+        token[1] = hex[2];
+
+        int y = htoi(token);
+        y = c * log10(1 + y);
+        //todo pixel calculado
+        
+        //colocando cada pixel no vetor de novaImagem
+        novaImagem.pixels[i] = y;
+        
+        //colocando no arquivo;
+        fwrite(y, sizeof(y), 1, ptrFILE);
+        
+    }
+
+}
+
+// Função para converter string hexadecimal para inteiro
+//tirada da net 🙃
+// Função para converter string hexadecimal para inteiro
+int htoi(const char *hex_string) {
+    int result = 0;
+    int len = strlen(hex_string);
+    int base = 1;
+
+    // Converter cada caractere hexadecimal para inteiro
+    for (int i = len - 1; i >= 0; i--) {
+        int digit_value;
+        if (isdigit(hex_string[i])) {
+            digit_value = hex_string[i] - '0';
+        } else {
+            digit_value = toupper(hex_string[i]) - 'A' + 10;
+        }
+        result += digit_value * base;
+        base *= 16;
+    }
+
+    return result;
+}
+
+
+FILE* chamarNovoFILE(char* argv[])
+{
+    FILE* ptrFILE;
+    char* novoNome;
+    strcpy(novoNome, argv[1]);
+
+    ptrFILE = fopen(novoNome, "w+");
+
+    return ptrFILE;
+}
+
+int main(int argc, char* argv[])
+{
+    Imagem imagem;
+    infoHeader(&imagem, argv);
+    calculaMin(imagem, argv);
+    Imagem novaImagem;
+
+    if (imagem.nValue == 2) {
+        strcpy(imagem.tipo, "Texto");
+        loadPixelsTEXTO(imagem, argv);
+        createNew_TEXTO(imagem, novaImagem, argv);
+    }
+    else {
+        strcpy(imagem.tipo, "Binario");
+        loadPixelsBINARIO(imagem, argv);
+        createNew_BINARIO(imagem, novaImagem, argv);
+    }
+
+    free(imagem.pixels);
+    free(novaImagem.pixels);
+    //pode ainda fazê-las apontar para NULL
     return 0;
 }
