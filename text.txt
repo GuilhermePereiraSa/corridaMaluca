@@ -1,0 +1,4 @@
+P<3>
+# Comentario qualquer: normalmente o software que criou a imagem !
+XDIM YDIM
+MaxVal
