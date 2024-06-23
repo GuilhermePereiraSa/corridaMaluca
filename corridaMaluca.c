@@ -1,5 +1,5 @@
 /*
- Corrida Maluca - é necessária a visualização de um velocímetro de uma imagem em formato pgm, 
+ Corrida Maluca - é necessária a visualização de um velocímetro de uma imagem em formato pgm,
  que está muito "saturada e escura".
 */
 
@@ -26,8 +26,8 @@ void loadPixelsText(Imagem imagem, char* argv[]);
 void loadPixelsBinary(Imagem imagem, char* argv[]);
 void createNewText(Imagem imagem, Imagem novaImagem, char* argv[]);
 void createNewBinary(Imagem imagem, Imagem novaImagem, char* argv[]);
-FILE* chamarNovoFile(char* argv[]);
-int htoi(const char *hex_string);
+FILE* callNewFile(char* argv[]);
+int htoi(const char* hex_string);
 
 
 void infoHeader(Imagem* image, char* argv[])
@@ -129,7 +129,7 @@ void loadPixelsBinary(Imagem imagem, char* argv[])
 
 void createNewText(Imagem imagem, Imagem novaImagem, char* argv[])
 {
-    FILE* ptrFILE = chamarNovoFile(argv);
+    FILE* ptrFILE = callNewFile(argv);
 
     fprintf(ptrFILE, "P<2>");
     fprintf(ptrFILE, "# CREATOR: Image Generator SCC-222 - Lab ICC I");
@@ -163,7 +163,7 @@ void createNewText(Imagem imagem, Imagem novaImagem, char* argv[])
 
 void createNewBinary(Imagem imagem, Imagem novaImagem, char* argv[])
 {
-    FILE* ptrFILE = chamarNovoFile(argv);
+    FILE* ptrFILE = callNewFile(argv);
 
     fprintf(ptrFILE, "P<2>");
     fprintf(ptrFILE, "# CREATOR: Image Generator SCC-222 - Lab ICC I");
@@ -210,13 +210,13 @@ void createNewBinary(Imagem imagem, Imagem novaImagem, char* argv[])
         int y = htoi(token);
         y = c * log10(1 + y);
         //todo pixel calculado
-        
+
         //colocando cada pixel no vetor de novaImagem
         novaImagem.pixels[i] = y;
-        
+
         //colocando no arquivo;
         fwrite(y, sizeof(y), 1, ptrFILE);
-        
+
     }
 
 }
@@ -224,7 +224,7 @@ void createNewBinary(Imagem imagem, Imagem novaImagem, char* argv[])
 // Função para converter string hexadecimal para inteiro
 //tirada da net 🙃
 // Função para converter string hexadecimal para inteiro
-int htoi(const char *hex_string) {
+int htoi(const char* hex_string) {
     int result = 0;
     int len = strlen(hex_string);
     int base = 1;
@@ -234,7 +234,8 @@ int htoi(const char *hex_string) {
         int digit_value;
         if (isdigit(hex_string[i])) {
             digit_value = hex_string[i] - '0';
-        } else {
+        }
+        else {
             digit_value = toupper(hex_string[i]) - 'A' + 10;
         }
         result += digit_value * base;
@@ -245,7 +246,7 @@ int htoi(const char *hex_string) {
 }
 
 
-FILE* chamarNovoFile(char* argv[])
+FILE* callNewFile(char* argv[])
 {
     FILE* ptrFILE;
     char* novoNome;
