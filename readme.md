@@ -1,1 +1,1 @@
-(Veja mais)[CorridaMaluca.pdf]
+[Veja mais](info/CorridaMaluca.pdf)
