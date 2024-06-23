@@ -1,5 +1,6 @@
 /*
-Corrida Maluca - é necessária a visualização d
+ Corrida Maluca - é necessária a visualização de um velocímetro de uma imagem em formato pgm, 
+ que está muito "saturada e escura".
 */
 
 #include <stdio.h>
@@ -20,12 +21,13 @@ typedef struct {
 
 //functions 
 void infoHeader(Imagem* imagem, char* argv[]);
-void calculaMin(Imagem imagem, char* argv[]);
-void loadPixelsTEXTO(Imagem imagem, char* argv[]);
-void loadPixelsBINARIO(Imagem imagem, char* argv[]);
-void createNew_TEXTO(Imagem imagem, Imagem novaImagem, char* argv[]);
-void createNew_BINARIO(Imagem imagem, Imagem novaImagem, char* argv[]);
-FILE* chamarNovoFILE(char* argv[]);
+void calculateMin(Imagem imagem, char* argv[]);
+void loadPixelsText(Imagem imagem, char* argv[]);
+void loadPixelsBinary(Imagem imagem, char* argv[]);
+void createNewText(Imagem imagem, Imagem novaImagem, char* argv[]);
+void createNewBinary(Imagem imagem, Imagem novaImagem, char* argv[]);
+FILE* chamarNovoFile(char* argv[]);
+int htoi(const char *hex_string);
 
 
 void infoHeader(Imagem* image, char* argv[])
@@ -60,7 +62,7 @@ void infoHeader(Imagem* image, char* argv[])
     fclose(ptrFile);
 }
 
-void calculaMin(Imagem imagem, char* argv[])
+void calculateMin(Imagem imagem, char* argv[])
 {
     FILE* ptr;
     ptr = fopen(argv[1], "rb");
@@ -81,7 +83,7 @@ void calculaMin(Imagem imagem, char* argv[])
     imagem.MinVal = menorVal;
 }
 
-void loadPixelsTEXTO(Imagem imagem, char* argv[])
+void loadPixelsText(Imagem imagem, char* argv[])
 {
     FILE* ptr;
     ptr = fopen(argv[1], "rb");
@@ -104,7 +106,7 @@ void loadPixelsTEXTO(Imagem imagem, char* argv[])
 
 }
 
-void loadPixelsBINARIO(Imagem imagem, char* argv[])
+void loadPixelsBinary(Imagem imagem, char* argv[])
 {
     FILE* ptr;
     ptr = fopen(argv[1], "rb");
@@ -125,9 +127,9 @@ void loadPixelsBINARIO(Imagem imagem, char* argv[])
 
 }
 
-void createNew_TEXTO(Imagem imagem, Imagem novaImagem, char* argv[])
+void createNewText(Imagem imagem, Imagem novaImagem, char* argv[])
 {
-    FILE* ptrFILE = chamarNovoFILE(argv);
+    FILE* ptrFILE = chamarNovoFile(argv);
 
     fprintf(ptrFILE, "P<2>");
     fprintf(ptrFILE, "# CREATOR: Image Generator SCC-222 - Lab ICC I");
@@ -159,9 +161,9 @@ void createNew_TEXTO(Imagem imagem, Imagem novaImagem, char* argv[])
 
 }
 
-void createNew_BINARIO(Imagem imagem, Imagem novaImagem, char* argv[])
+void createNewBinary(Imagem imagem, Imagem novaImagem, char* argv[])
 {
-    FILE* ptrFILE = chamarNovoFILE(argv);
+    FILE* ptrFILE = chamarNovoFile(argv);
 
     fprintf(ptrFILE, "P<2>");
     fprintf(ptrFILE, "# CREATOR: Image Generator SCC-222 - Lab ICC I");
@@ -243,7 +245,7 @@ int htoi(const char *hex_string) {
 }
 
 
-FILE* chamarNovoFILE(char* argv[])
+FILE* chamarNovoFile(char* argv[])
 {
     FILE* ptrFILE;
     char* novoNome;
@@ -258,18 +260,18 @@ int main(int argc, char* argv[])
 {
     Imagem imagem;
     infoHeader(&imagem, argv);
-    calculaMin(imagem, argv);
+    calculateMin(imagem, argv);
     Imagem novaImagem;
 
     if (imagem.nValue == 2) {
         strcpy(imagem.tipo, "Texto");
-        loadPixelsTEXTO(imagem, argv);
-        createNew_TEXTO(imagem, novaImagem, argv);
+        loadPixelsText(imagem, argv);
+        createNewText(imagem, novaImagem, argv);
     }
     else {
         strcpy(imagem.tipo, "Binario");
-        loadPixelsBINARIO(imagem, argv);
-        createNew_BINARIO(imagem, novaImagem, argv);
+        loadPixelsBinary(imagem, argv);
+        createNewBinary(imagem, novaImagem, argv);
     }
 
     free(imagem.pixels);
